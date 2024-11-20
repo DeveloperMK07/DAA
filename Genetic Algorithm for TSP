@@ -1,0 +1,193 @@
+#include <iostream>
+#include <vector>
+#include <climits>
+#include <ctime>
+#include <cstdlib>
+#include <algorithm>
+
+using namespace std;
+
+class GeneticAlgorithm {
+private:
+    int n; // Number of cities
+    vector<vector<int>> dist; // Distance matrix
+    vector<vector<int>> population; // Population of chromosomes (solutions)
+    int populationSize; // Size of the population
+    int maxGenerations; // Maximum number of generations
+    double crossoverRate; // Crossover rate
+    double mutationRate; // Mutation rate
+
+public:
+    GeneticAlgorithm(int n, vector<vector<int>>& dist, int populationSize, int maxGenerations, double crossoverRate, double mutationRate)
+        : n(n), dist(dist), populationSize(populationSize), maxGenerations(maxGenerations), crossoverRate(crossoverRate), mutationRate(mutationRate) {
+        srand(time(0)); // Initialize random seed
+    }
+
+    // Function to calculate the total distance (cost) of a tour (chromosome)
+    int calculateCost(const vector<int>& tour) {
+        int cost = 0;
+        for (int i = 0; i < n - 1; i++) {
+            cost += dist[tour[i]][tour[i + 1]];
+        }
+        cost += dist[tour[n - 1]][tour[0]]; // Return to the starting city
+        return cost;
+    }
+
+    // Function to initialize the population with random solutions
+    void initializePopulation() {
+        population.clear();
+        for (int i = 0; i < populationSize; i++) {
+            vector<int> individual;
+            for (int j = 0; j < n; j++) {
+                individual.push_back(j);
+            }
+            random_shuffle(individual.begin(), individual.end());
+            population.push_back(individual);
+        }
+    }
+
+    // Function to perform tournament selection (choose two parents)
+    vector<int> tournamentSelection() {
+        int best = rand() % populationSize;
+        int secondBest = rand() % populationSize;
+
+        for (int i = 0; i < 5; i++) { // Tournament size = 5
+            int contender = rand() % populationSize;
+            if (calculateCost(population[contender]) < calculateCost(population[best])) {
+                best = contender;
+            }
+
+            contender = rand() % populationSize;
+            if (calculateCost(population[contender]) < calculateCost(population[secondBest])) {
+                secondBest = contender;
+            }
+        }
+
+        return population[best];
+    }
+
+    // Function to perform ordered crossover between two parents
+    vector<int> crossover(const vector<int>& parent1, const vector<int>& parent2) {
+        int start = rand() % n;
+        int end = rand() % n;
+
+        if (start > end) swap(start, end);
+
+        vector<int> child(n, -1);
+
+        // Copy the section from parent1
+        for (int i = start; i <= end; i++) {
+            child[i] = parent1[i];
+        }
+
+        // Fill in the remaining positions with genes from parent2
+        int idx = 0;
+        for (int i = 0; i < n; i++) {
+            if (child[i] == -1) {
+                while (find(child.begin(), child.end(), parent2[idx]) != child.end()) {
+                    idx++;
+                }
+                child[i] = parent2[idx];
+            }
+        }
+        return child;
+    }
+
+    // Function to perform mutation by swapping two cities
+    void mutate(vector<int>& individual) {
+        if ((rand() % 100) / 100.0 < mutationRate) {
+            int idx1 = rand() % n;
+            int idx2 = rand() % n;
+            swap(individual[idx1], individual[idx2]);
+        }
+    }
+
+    // Function to evolve the population using selection, crossover, and mutation
+    void evolve() {
+        vector<vector<int>> newPopulation;
+
+        // Create a new population
+        for (int i = 0; i < populationSize / 2; i++) {
+            vector<int> parent1 = tournamentSelection();
+            vector<int> parent2 = tournamentSelection();
+
+            // Crossover
+            vector<int> child1 = crossover(parent1, parent2);
+            vector<int> child2 = crossover(parent2, parent1);
+
+            // Mutation
+            mutate(child1);
+            mutate(child2);
+
+            newPopulation.push_back(child1);
+            newPopulation.push_back(child2);
+        }
+
+        population = newPopulation;
+    }
+
+    // Function to run the genetic algorithm to solve the TSP
+    void run() {
+        initializePopulation();
+
+        int bestCost = INT_MAX;
+        vector<int> bestSolution;
+
+        // Run for the maximum number of generations
+        for (int generation = 0; generation < maxGenerations; generation++) {
+            evolve();
+
+            // Check the best solution in the population
+            for (const auto& individual : population) {
+                int cost = calculateCost(individual);
+                if (cost < bestCost) {
+                    bestCost = cost;
+                    bestSolution = individual;
+                }
+            }
+
+            cout << "Generation " << generation + 1 << ": Best cost = " << bestCost << endl;
+        }
+
+        // Output the final best solution
+        cout << "\nBest Solution Found: ";
+        for (int city : bestSolution) {
+            cout << city << " ";
+        }
+        cout << "\nBest cost: " << bestCost << endl;
+    }
+};
+
+int main() {
+    int n, populationSize, maxGenerations;
+    double crossoverRate, mutationRate;
+
+    // User input
+    cout << "Enter the number of cities: ";
+    cin >> n;
+
+    vector<vector<int>> dist(n, vector<int>(n));
+    cout << "Enter the distance matrix (n x n):\n";
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            cin >> dist[i][j];
+        }
+    }
+
+    cout << "Enter the population size: ";
+    cin >> populationSize;
+    cout << "Enter the maximum number of generations: ";
+    cin >> maxGenerations;
+    cout << "Enter the crossover rate (0 to 1): ";
+    cin >> crossoverRate;
+    cout << "Enter the mutation rate (0 to 1): ";
+    cin >> mutationRate;
+
+    // Create Genetic Algorithm object and run the algorithm
+    GeneticAlgorithm ga(n, dist, populationSize, maxGenerations, crossoverRate, mutationRate);
+    ga.run();
+
+    return 0;
+}
+TC:nxpxg
+SC:nxp
