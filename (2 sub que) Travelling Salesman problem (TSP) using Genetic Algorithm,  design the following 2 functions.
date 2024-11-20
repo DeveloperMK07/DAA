@@ -1,0 +1,110 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <ctime>
+#include <cstdlib>
+
+using namespace std;
+
+// Function to calculate the total distance of a tour (chromosome)
+int calculateTourLength(const vector<int>& tour, const vector<vector<int>>& dist) {
+    int length = 0;
+    for (int i = 0; i < tour.size() - 1; i++) {
+        length += dist[tour[i]][tour[i + 1]];
+    }
+    length += dist[tour[tour.size() - 1]][tour[0]];  // Return to the start city
+    return length;
+}
+
+// Function to perform Order Crossover (OX) between two parents
+void orderCrossover(const vector<int>& parent1, const vector<int>& parent2, vector<int>& child) {
+    int n = parent1.size();
+    vector<bool> visited(n, false);
+
+    // Step 1: Randomly select a subset of cities from the first parent
+    int start = rand() % n;
+    int end = rand() % n;
+
+    if (start > end) swap(start, end);
+
+    // Copy the selected portion from parent1 to child
+    for (int i = start; i <= end; i++) {
+        child[i] = parent1[i];
+        visited[parent1[i]] = true;
+    }
+
+    // Step 2: Fill in the remaining cities from parent2 in the order they appear
+    int index = 0;
+    for (int i = 0; i < n; i++) {
+        if (!visited[parent2[i]]) {
+            // Find the next empty spot in the child and place the city
+            while (child[index] != -1) {
+                index++;
+            }
+            child[index] = parent2[i];
+        }
+    }
+}
+
+// Function to select an individual from the population using Roulette Wheel Selection
+int rouletteWheelSelection(const vector<int>& fitness, int totalFitness) {
+    int randomValue = rand() % totalFitness;
+    int cumulativeFitness = 0;
+
+    for (int i = 0; i < fitness.size(); i++) {
+        cumulativeFitness += fitness[i];
+        if (cumulativeFitness > randomValue) {
+            return i;
+        }
+    }
+    return fitness.size() - 1;  // In case of error, return the last individual
+}
+
+int main() {
+    srand(time(0));  // Seed for random number generation
+
+    int n; // Number of cities
+    cout << "Enter the number of cities: ";
+    cin >> n;
+
+    vector<vector<int>> dist(n, vector<int>(n));
+
+    cout << "Enter the distance matrix (n x n):\n";
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            cin >> dist[i][j];
+        }
+    }
+
+    // Example population of 4 chromosomes (random tours for demonstration)
+    vector<vector<int>> population(4, vector<int>(n));
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < n; j++) {
+            population[i][j] = j;
+        }
+        random_shuffle(population[i].begin(), population[i].end());
+    }
+
+    // Calculate fitness of each individual (shorter distance = better fitness)
+    vector<int> fitness(population.size());
+    int totalFitness = 0;
+    for (int i = 0; i < population.size(); i++) {
+        fitness[i] = 1 / calculateTourLength(population[i], dist);  // Inverse of distance for fitness
+        totalFitness += fitness[i];
+    }
+
+    // Perform crossover to create a child from two parents
+    vector<int> child(n, -1);
+    int parent1Index = rouletteWheelSelection(fitness, totalFitness);
+    int parent2Index = rouletteWheelSelection(fitness, totalFitness);
+
+    orderCrossover(population[parent1Index], population[parent2Index], child);
+
+    // Calculate child's tour length
+    int childLength = calculateTourLength(child, dist);
+    cout << "Child tour length: " << childLength << endl;
+
+    return 0;
+}
+TC:o(n) no of crossover opreartion xo(m) size of pop
+SC:o(n) sotre chromosome xo(m) fitness level
