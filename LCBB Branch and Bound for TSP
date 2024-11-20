@@ -1,0 +1,145 @@
+#include <iostream>
+#include <vector>
+#include <climits>
+#include <queue>
+#include <algorithm>
+
+using namespace std;
+
+// Structure to represent a node in the Branch and Bound tree
+struct Node {
+    vector<int> path;    // Path taken to reach this node
+    int cost;            // Cost of the path
+    int level;           // Level in the search tree (number of cities visited)
+    int bound;           // Lower bound of the cost from this node
+
+    // Constructor for Node
+    Node(vector<int> p, int c, int l, int b) : path(p), cost(c), level(l), bound(b) {}
+
+    // Compare function for priority queue (min-heap based on bound)
+    bool operator<(const Node& other) const {
+        return bound > other.bound;  // Reverse order to create min-heap
+    }
+};
+
+// Function to calculate the lower bound for the node (LCBB)
+int calculateBound(const vector<vector<int>>& dist, Node& node, int n) {
+    int bound = 0;
+
+    // Add the cost of edges in the path that are part of the current tour
+    for (int i = 0; i < node.level - 1; i++) {
+        bound += dist[node.path[i]][node.path[i + 1]];
+    }
+
+    // For each city, add the minimum edge cost to the bound
+    vector<bool> visited(n, false);
+    for (int i = 0; i < node.level; i++) {
+        visited[node.path[i]] = true;
+    }
+
+    for (int i = 0; i < node.level - 1; i++) {
+        int min1 = INT_MAX, min2 = INT_MAX;
+        for (int j = 0; j < n; j++) {
+            if (!visited[j] && dist[node.path[i]][j] < min1) {
+                min2 = min1;
+                min1 = dist[node.path[i]][j];
+            } else if (!visited[j] && dist[node.path[i]][j] < min2) {
+                min2 = dist[node.path[i]][j];
+            }
+        }
+        bound += min1 + min2;
+    }
+
+    // Add the minimum edge cost for the last city to complete the tour
+    int min1 = INT_MAX, min2 = INT_MAX;
+    for (int i = 0; i < n; i++) {
+        if (!visited[i] && dist[node.path[node.level - 1]][i] < min1) {
+            min2 = min1;
+            min1 = dist[node.path[node.level - 1]][i];
+        } else if (!visited[i] && dist[node.path[node.level - 1]][i] < min2) {
+            min2 = dist[node.path[node.level - 1]][i];
+        }
+    }
+    bound += min1 + min2;
+
+    return bound;
+}
+
+// Function to solve the Traveling Salesman Problem using Branch and Bound (LCBB)
+int branchAndBoundTSP(const vector<vector<int>>& dist, int n) {
+    // Initial path with the first city (0th city)
+    vector<int> initialPath = {0};
+    Node root(initialPath, 0, 1, 0);  // root node: cost=0, level=1, bound=0
+
+    // Priority Queue to explore nodes with the least bound first
+    priority_queue<Node> pq;
+    pq.push(root);
+
+    int finalCost = INT_MAX;
+    vector<int> finalPath;
+
+    while (!pq.empty()) {
+        Node currentNode = pq.top();
+        pq.pop();
+
+        // If all cities are visited, check if this is the best solution
+        if (currentNode.level == n) {
+            int costWithReturn = currentNode.cost + dist[currentNode.path[n - 1]][0];
+            if (costWithReturn < finalCost) {
+                finalCost = costWithReturn;
+                finalPath = currentNode.path;
+            }
+            continue;
+        }
+
+        // Explore the next city for the tour
+        for (int i = 0; i < n; i++) {
+            if (find(currentNode.path.begin(), currentNode.path.end(), i) == currentNode.path.end()) {
+                vector<int> newPath = currentNode.path;
+                newPath.push_back(i);
+                int newCost = currentNode.cost + dist[currentNode.path[currentNode.level - 1]][i];
+
+                // Create new node
+                Node newNode(newPath, newCost, currentNode.level + 1, 0);
+                newNode.bound = calculateBound(dist, newNode, n);
+
+                // If bound is smaller than finalCost, push the new node into the queue
+                if (newNode.bound < finalCost) {
+                    pq.push(newNode);
+                }
+            }
+        }
+    }
+
+    // Output the final path and cost
+    cout << "Minimum cost: " << finalCost << endl;
+    cout << "Path: ";
+    for (int i = 0; i < finalPath.size(); i++) {
+        cout << finalPath[i] << " ";
+    }
+    cout << 0 << endl;  // Return to the starting city
+
+    return finalCost;
+}
+
+int main() {
+    int n;
+    cout << "Enter the number of cities: ";
+    cin >> n;
+
+    // Input distance matrix (n x n)
+    vector<vector<int>> dist(n, vector<int>(n));
+    cout << "Enter the distance matrix (row by row):\n";
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            cin >> dist[i][j];
+        }
+    }
+
+    // Solve the TSP using Branch and Bound (LCBB)
+    branchAndBoundTSP(dist, n);
+
+    return 0;
+}
+TC:n!
+SC:n2
