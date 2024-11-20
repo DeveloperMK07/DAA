@@ -1,0 +1,73 @@
+#include <iostream>
+#include <vector>
+#include <cstdlib> // For rand() and srand()
+#include <ctime>   // For seeding rand()
+#include <algorithm> // For find()
+using namespace std;
+
+// Function to perform Order Crossover (OX) on two parent chromosomes
+vector<int> crossover(const vector<int>& parent1, const vector<int>& parent2) {
+    int n = parent1.size();
+    vector<int> offspring(n, -1); // Initialize offspring with -1 (indicating empty positions)
+
+    // Randomly select two crossover points
+    int point1 = rand() % n;
+    int point2 = rand() % n;
+
+    // Ensure point1 is less than point2
+    if (point1 > point2) swap(point1, point2);
+
+    // Copy the segment from parent1 to offspring
+    for (int i = point1; i <= point2; i++) {
+        offspring[i] = parent1[i];
+    }
+
+    // Fill the remaining positions from parent2 in the same order, skipping duplicates
+    int currentIndex = (point2 + 1) % n;
+    for (int i = 0; i < n; i++) {
+        int city = parent2[(point2 + 1 + i) % n];
+        if (find(offspring.begin(), offspring.end(), city) == offspring.end()) {
+            offspring[currentIndex] = city;
+            currentIndex = (currentIndex + 1) % n;
+        }
+    }
+
+    return offspring;
+}
+
+int main() {
+    srand(time(0)); // Seed the random number generator
+
+    // Input the number of cities
+    int n;
+    cout << "Enter the number of cities: ";
+    cin >> n;
+
+    // Input the first parent chromosome
+    vector<int> parent1(n);
+    cout << "Enter the first parent chromosome (space-separated): ";
+    for (int i = 0; i < n; i++) {
+        cin >> parent1[i];
+    }
+
+    // Input the second parent chromosome
+    vector<int> parent2(n);
+    cout << "Enter the second parent chromosome (space-separated): ";
+    for (int i = 0; i < n; i++) {
+        cin >> parent2[i];
+    }
+
+    // Perform crossover
+    vector<int> offspring = crossover(parent1, parent2);
+
+    // Output the offspring
+    cout << "Offspring chromosome: ";
+    for (int city : offspring) {
+        cout << city << " ";
+    }
+    cout << endl;
+
+    return 0;
+}
+TC:N2
+SC:N
