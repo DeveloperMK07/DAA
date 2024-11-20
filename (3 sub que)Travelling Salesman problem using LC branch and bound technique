@@ -1,6 +1,5 @@
 #include <iostream>
 #include <vector>
-#include <climits>
 #include <algorithm>
 
 using namespace std;
@@ -10,74 +9,13 @@ struct Node {
     vector<int> path;  // Path taken to reach this node (partial tour)
     int cost;          // Cost of the current path
     int level;         // The level in the search tree (number of cities visited)
-    int bound;         // Lower bound of the cost for completing the tour from this node
 
-    Node(vector<int> p, int c, int l, int b) : path(p), cost(c), level(l), bound(b) {}
+    Node(vector<int> p, int c, int l) : path(p), cost(c), level(l) {}
 };
-
-// Function to generate the first (start) node for LCBB TSP
-Node generateStartNode(int n) {
-    vector<int> startPath = {0};  // Start at city 0
-    return Node(startPath, 0, 1, 0);  // Cost 0, level 1 (one city visited), bound 0
-}
-
-// Function to generate all the children of a given node
-vector<Node> generateChildren(Node& parent, const vector<vector<int>>& dist, int n) {
-    vector<Node> children;
-
-    // Generate children by adding one unvisited city to the current path
-    for (int i = 0; i < n; i++) {
-        if (find(parent.path.begin(), parent.path.end(), i) == parent.path.end()) {  // Check if city i is unvisited
-            vector<int> newPath = parent.path;
-            newPath.push_back(i);  // Add city i to the path
-
-            int newCost = parent.cost + dist[parent.path[parent.level - 1]][i];  // Add the cost to reach city i
-            int newLevel = parent.level + 1;
-
-            // Calculate the bound for the new node (lower bound for the cost of completing the tour)
-            int newBound = calculateBound(dist, newPath, newCost, n);
-
-            children.push_back(Node(newPath, newCost, newLevel, newBound));  // Create the child node
-        }
-    }
-
-    return children;
-}
 
 // Function to check if a given node is a leaf node (fully visited tour)
 bool isLeafNode(const Node& node, int n) {
     return node.level == n;  // If all cities are visited, it's a leaf node
-}
-
-// Function to calculate the lower bound for a given node (using a simple heuristic)
-int calculateBound(const vector<vector<int>>& dist, const vector<int>& path, int cost, int n) {
-    int bound = cost;
-
-    // Add the minimum cost edges from each unvisited city to the bound
-    vector<bool> visited(n, false);
-    for (int city : path) {
-        visited[city] = true;
-    }
-
-    for (int i = 0; i < n; i++) {
-        if (!visited[i]) {
-            int min1 = INT_MAX, min2 = INT_MAX;
-
-            // Find the two smallest edges from city i to unvisited cities
-            for (int j = 0; j < n; j++) {
-                if (!visited[j] && dist[i][j] < min1) {
-                    min2 = min1;
-                    min1 = dist[i][j];
-                } else if (!visited[j] && dist[i][j] < min2) {
-                    min2 = dist[i][j];
-                }
-            }
-
-            bound += (min1 + min2);  // Add the two smallest edges to the bound
-        }
-    }
-
-    return bound;
 }
 
 int main() {
@@ -93,34 +31,40 @@ int main() {
         }
     }
 
-    // 1. Generate the start node
-    Node startNode = generateStartNode(n);
-    cout << "Start Node Generated: " << endl;
-    cout << "Path: ";
-    for (int city : startNode.path) {
-        cout << city << " ";
-    }
-    cout << "\nCost: " << startNode.cost << endl;
-
-    // 2. Generate children of the start node
-    vector<Node> children = generateChildren(startNode, dist, n);
-    cout << "\nChildren generated: " << endl;
-    for (const auto& child : children) {
-        cout << "Path: ";
-        for (int city : child.path) {
-            cout << city << " ";
-        }
-        cout << "\nCost: " << child.cost << ", Bound: " << child.bound << endl;
+    // Input the path of the node
+    cout << "Enter the path (space-separated city indices, terminated by -1): ";
+    vector<int> path;
+    int city;
+    while (cin >> city && city != -1) {
+        path.push_back(city);
     }
 
-    // 3. Check if the node is a leaf
-    cout << "\nChecking if the start node is a leaf node: ";
-    if (isLeafNode(startNode, n)) {
-        cout << "Yes, it is a leaf node.\n";
+    // Calculate the cost of the given path
+    int cost = 0;
+    for (size_t i = 1; i < path.size(); i++) {
+        cost += dist[path[i - 1]][path[i]];
+    }
+
+    // Determine the level (number of cities visited)
+    int level = path.size();
+
+    // Create the node
+    Node userNode(path, cost, level);
+
+    // Check if the node is a leaf node
+    cout << "Path entered: ";
+    for (int c : userNode.path) {
+        cout << c << " ";
+    }
+    cout << "\nCost: " << userNode.cost << endl;
+
+    if (isLeafNode(userNode, n)) {
+        cout << "The node is a leaf node (all cities visited).\n";
     } else {
-        cout << "No, it is not a leaf node.\n";
+        cout << "The node is NOT a leaf node (not all cities visited).\n";
     }
 
     return 0;
 }
-TC AND SC: n
+
+TC AND SC: n2
