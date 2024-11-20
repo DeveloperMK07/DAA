@@ -1,0 +1,58 @@
+#include <iostream>
+#include <vector>
+#include <cstdlib> // For rand() and srand()
+#include <ctime>   // For seeding rand()
+using namespace std;
+
+// Function to perform mutation on a chromosome (TSP solution)
+void mutate(vector<int>& chromosome) {
+    int n = chromosome.size();
+    if (n < 2) return; // Mutation is not possible with fewer than 2 cities
+
+    // Randomly select two indices to swap
+    int index1 = rand() % n;
+    int index2 = rand() % n;
+
+    // Ensure the indices are different
+    while (index1 == index2) {
+        index2 = rand() % n;
+    }
+
+    // Swap the two cities
+    swap(chromosome[index1], chromosome[index2]);
+}
+
+int main() {
+    srand(time(0)); // Seed the random number generator
+
+    // Input the number of cities
+    int n;
+    cout << "Enter the number of cities: ";
+    cin >> n;
+
+    // Input the chromosome representing the TSP solution
+    vector<int> chromosome(n);
+    cout << "Enter the cities in the chromosome (space-separated): ";
+    for (int i = 0; i < n; i++) {
+        cin >> chromosome[i];
+    }
+
+    cout << "Original chromosome: ";
+    for (int city : chromosome) {
+        cout << city << " ";
+    }
+    cout << endl;
+
+    // Perform mutation
+    mutate(chromosome);
+
+    cout << "Mutated chromosome: ";
+    for (int city : chromosome) {
+        cout << city << " ";
+    }
+    cout << endl;
+
+    return 0;
+}
+TC: n^2
+SC: n
