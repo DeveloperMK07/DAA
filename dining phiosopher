@@ -1,0 +1,77 @@
+#include <iostream>
+#include <thread>
+#include <vector>
+#include <mutex>
+#include <condition_variable>
+#include <chrono>
+#include <cstdlib>
+
+using namespace std;
+
+class DiningPhilosophers {
+private:
+    int num_philosophers;
+    vector<mutex> forks;  // Mutexes for forks
+    vector<condition_variable> cv; // Condition variables to wait for fork availability
+
+public:
+    DiningPhilosophers(int n) : num_philosophers(n), forks(n), cv(n) {}
+
+    // Simulate the philosopher's thinking and eating process
+    void philosopher(int id) {
+        while (true) {
+            think(id);          // Philosopher is thinking
+            dine(id);           // Philosopher is eating
+        }
+    }
+
+private:
+    // Philosopher is thinking (simulate with sleep)
+    void think(int id) {
+        cout << "Philosopher " << id << " is thinking." << endl;
+        this_thread::sleep_for(chrono::milliseconds(rand() % 1000 + 500));  // Random think time
+    }
+
+    // Philosopher picks up forks and eats
+    void dine(int id) {
+        int left = id;
+        int right = (id + 1) % num_philosophers;
+
+        // Ensure that the philosopher picks up forks in a consistent order to avoid deadlock
+        if (left > right) {
+            swap(left, right);  // Ensure that we always pick the lower indexed fork first
+        }
+
+        // Try to pick up both forks (left and right)
+        unique_lock<mutex> leftLock(forks[left]);
+        unique_lock<mutex> rightLock(forks[right]);
+
+        cout << "Philosopher " << id << " is eating." << endl;
+        this_thread::sleep_for(chrono::milliseconds(rand() % 1000 + 500));  // Random eat time
+    }
+};
+
+int main() {
+    int num_philosophers;
+    cout << "Enter the number of philosophers: ";
+    cin >> num_philosophers;
+
+    // Seed the random number generator for random delays
+    srand(time(0));
+
+    DiningPhilosophers dp(num_philosophers);
+
+    vector<thread> philosophers;
+    for (int i = 0; i < num_philosophers; i++) {
+        philosophers.push_back(thread(&DiningPhilosophers::philosopher, &dp, i));
+    }
+
+    // Wait for all philosophers to finish
+    for (auto& th : philosophers) {
+        th.join();
+    }
+
+    return 0;
+}
+TC:n
+SC:n
