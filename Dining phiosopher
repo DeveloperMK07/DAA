@@ -5,6 +5,8 @@
 #include <condition_variable>
 #include <chrono>
 #include <cstdlib>
+#include <set>
+#include <tuple>
 
 using namespace std;
 
@@ -13,6 +15,8 @@ private:
     int num_philosophers;
     vector<mutex> forks;  // Mutexes for forks
     vector<condition_variable> cv; // Condition variables to wait for fork availability
+    set<tuple<int, int>> used_times; // Set to track unique (left, right) fork times
+    mutex time_lock; // Lock for the time tracking
 
 public:
     DiningPhilosophers(int n) : num_philosophers(n), forks(n), cv(n) {}
@@ -21,7 +25,9 @@ public:
     void philosopher(int id) {
         while (true) {
             think(id);          // Philosopher is thinking
-            dine(id);           // Philosopher is eating
+            if (!dine(id)) {    // Philosopher tries to eat and ensure no duplicate time usage
+                break;  // If no more unique solutions, stop
+            }
         }
     }
 
@@ -32,8 +38,8 @@ private:
         this_thread::sleep_for(chrono::milliseconds(rand() % 1000 + 500));  // Random think time
     }
 
-    // Philosopher picks up forks and eats
-    void dine(int id) {
+    // Philosopher picks up forks and eats, ensuring no duplicate time usage
+    bool dine(int id) {
         int left = id;
         int right = (id + 1) % num_philosophers;
 
@@ -46,8 +52,24 @@ private:
         unique_lock<mutex> leftLock(forks[left]);
         unique_lock<mutex> rightLock(forks[right]);
 
+        // Generate a unique timestamp for this dining action
+        auto current_time = chrono::system_clock::now().time_since_epoch().count();
+        tuple<int, int> current_state = make_tuple(left, right);
+
+        // Lock to ensure no duplicate dining times
+        {
+            lock_guard<mutex> lock(time_lock);
+            if (used_times.find(current_state) != used_times.end()) {
+                // If this combination of forks (left, right) has been used, stop
+                return false;
+            }
+            used_times.insert(current_state);
+        }
+
         cout << "Philosopher " << id << " is eating." << endl;
         this_thread::sleep_for(chrono::milliseconds(rand() % 1000 + 500));  // Random eat time
+
+        return true;  // Successfully dined, continue
     }
 };
 
@@ -71,7 +93,10 @@ int main() {
         th.join();
     }
 
+    cout << "All possible dining combinations have been explored." << endl;
+
     return 0;
 }
-TC:n
+
+TC:n2
 SC:n
