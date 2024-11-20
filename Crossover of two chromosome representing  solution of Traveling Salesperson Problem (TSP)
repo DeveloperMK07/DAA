@@ -2,72 +2,83 @@
 #include <vector>
 #include <cstdlib> // For rand() and srand()
 #include <ctime>   // For seeding rand()
-#include <algorithm> // For find()
 using namespace std;
 
-// Function to perform Order Crossover (OX) on two parent chromosomes
-vector<int> crossover(const vector<int>& parent1, const vector<int>& parent2) {
-    int n = parent1.size();
-    vector<int> offspring(n, -1); // Initialize offspring with -1 (indicating empty positions)
+// Function to perform mutation on a chromosome (TSP solution)
+void mutate(vector<int>& chromosome) {
+    int n = chromosome.size();
+    if (n < 2) return; // Mutation is not possible with fewer than 2 cities
 
-    // Randomly select two crossover points
-    int point1 = rand() % n;
-    int point2 = rand() % n;
+    // Randomly select two indices to swap
+    int index1 = rand() % n;
+    int index2 = rand() % n;
 
-    // Ensure point1 is less than point2
-    if (point1 > point2) swap(point1, point2);
-
-    // Copy the segment from parent1 to offspring
-    for (int i = point1; i <= point2; i++) {
-        offspring[i] = parent1[i];
+    // Ensure the indices are different
+    while (index1 == index2) {
+        index2 = rand() % n;
     }
 
-    // Fill the remaining positions from parent2 in the same order, skipping duplicates
-    int currentIndex = (point2 + 1) % n;
-    for (int i = 0; i < n; i++) {
-        int city = parent2[(point2 + 1 + i) % n];
-        if (find(offspring.begin(), offspring.end(), city) == offspring.end()) {
-            offspring[currentIndex] = city;
-            currentIndex = (currentIndex + 1) % n;
-        }
-    }
+    // Swap the two cities
+    swap(chromosome[index1], chromosome[index2]);
+}
 
-    return offspring;
+// Function to calculate the total distance of a TSP solution
+int calculateDistance(const vector<int>& chromosome, const vector<vector<int>>& matrix) {
+    int totalDistance = 0;
+    int n = chromosome.size();
+    for (int i = 0; i < n - 1; i++) {
+        totalDistance += matrix[chromosome[i] - 1][chromosome[i + 1] - 1];
+    }
+    // Add the distance to return to the starting city
+    totalDistance += matrix[chromosome[n - 1] - 1][chromosome[0] - 1];
+    return totalDistance;
 }
 
 int main() {
     srand(time(0)); // Seed the random number generator
 
-    // Input the number of cities
-    int n;
-    cout << "Enter the number of cities: ";
-    cin >> n;
-
-    // Input the first parent chromosome
-    vector<int> parent1(n);
-    cout << "Enter the first parent chromosome (space-separated): ";
+    // Input the distance matrix
+    int n = 4; // For simplicity, we assume a fixed size of 4
+    vector<vector<int>> matrix(n, vector<int>(n));
+    cout << "Enter the 4x4 distance matrix:\n";
     for (int i = 0; i < n; i++) {
-        cin >> parent1[i];
+        for (int j = 0; j < n; j++) {
+            cin >> matrix[i][j];
+        }
     }
 
-    // Input the second parent chromosome
-    vector<int> parent2(n);
-    cout << "Enter the second parent chromosome (space-separated): ";
+    // Input the chromosome representing the TSP solution
+    vector<int> chromosome(n);
+    cout << "Enter the cities in the chromosome (space-separated, 1 to " << n << "): ";
     for (int i = 0; i < n; i++) {
-        cin >> parent2[i];
+        cin >> chromosome[i];
     }
 
-    // Perform crossover
-    vector<int> offspring = crossover(parent1, parent2);
-
-    // Output the offspring
-    cout << "Offspring chromosome: ";
-    for (int city : offspring) {
+    cout << "Original chromosome: ";
+    for (int city : chromosome) {
         cout << city << " ";
     }
     cout << endl;
 
+    // Calculate and display the total distance before mutation
+    int originalDistance = calculateDistance(chromosome, matrix);
+    cout << "Total distance (original): " << originalDistance << endl;
+
+    // Perform mutation
+    mutate(chromosome);
+
+    cout << "Mutated chromosome: ";
+    for (int city : chromosome) {
+        cout << city << " ";
+    }
+    cout << endl;
+
+    // Calculate and display the total distance after mutation
+    int mutatedDistance = calculateDistance(chromosome, matrix);
+    cout << "Total distance (mutated): " << mutatedDistance << endl;
+
     return 0;
 }
+
 TC:N2
 SC:N
