@@ -12,7 +12,7 @@ int calculateTourLength(const vector<int>& tour, const vector<vector<int>>& dist
     for (int i = 0; i < tour.size() - 1; i++) {
         length += dist[tour[i]][tour[i + 1]];
     }
-    length += dist[tour[tour.size() - 1]][tour[0]];  // Return to the start city
+    length += dist[tour[tour.size() - 1]][tour[0]]; // Return to the start city
     return length;
 }
 
@@ -37,7 +37,6 @@ void orderCrossover(const vector<int>& parent1, const vector<int>& parent2, vect
     int index = 0;
     for (int i = 0; i < n; i++) {
         if (!visited[parent2[i]]) {
-            // Find the next empty spot in the child and place the city
             while (child[index] != -1) {
                 index++;
             }
@@ -47,9 +46,9 @@ void orderCrossover(const vector<int>& parent1, const vector<int>& parent2, vect
 }
 
 // Function to select an individual from the population using Roulette Wheel Selection
-int rouletteWheelSelection(const vector<int>& fitness, int totalFitness) {
-    int randomValue = rand() % totalFitness;
-    int cumulativeFitness = 0;
+int rouletteWheelSelection(const vector<double>& fitness, double totalFitness) {
+    double randomValue = (rand() / (double)RAND_MAX) * totalFitness;
+    double cumulativeFitness = 0;
 
     for (int i = 0; i < fitness.size(); i++) {
         cumulativeFitness += fitness[i];
@@ -57,18 +56,18 @@ int rouletteWheelSelection(const vector<int>& fitness, int totalFitness) {
             return i;
         }
     }
-    return fitness.size() - 1;  // In case of error, return the last individual
+    return fitness.size() - 1; // In case of error, return the last individual
 }
 
 int main() {
-    srand(time(0));  // Seed for random number generation
+    srand(time(0)); // Seed for random number generation
 
-    int n; // Number of cities
+    int n;  // Number of cities
     cout << "Enter the number of cities: ";
     cin >> n;
 
+    // Distance matrix input
     vector<vector<int>> dist(n, vector<int>(n));
-
     cout << "Enter the distance matrix (n x n):\n";
     for (int i = 0; i < n; i++) {
         for (int j = 0; j < n; j++) {
@@ -76,20 +75,22 @@ int main() {
         }
     }
 
-    // Example population of 4 chromosomes (random tours for demonstration)
-    vector<vector<int>> population(4, vector<int>(n));
-    for (int i = 0; i < 4; i++) {
+    // Example population size
+    int populationSize = 4;
+    vector<vector<int>> population(populationSize, vector<int>(n));
+    for (int i = 0; i < populationSize; i++) {
         for (int j = 0; j < n; j++) {
             population[i][j] = j;
         }
         random_shuffle(population[i].begin(), population[i].end());
     }
 
-    // Calculate fitness of each individual (shorter distance = better fitness)
-    vector<int> fitness(population.size());
-    int totalFitness = 0;
+    // Calculate fitness of each individual
+    vector<double> fitness(population.size());
+    double totalFitness = 0;
     for (int i = 0; i < population.size(); i++) {
-        fitness[i] = 1 / calculateTourLength(population[i], dist);  // Inverse of distance for fitness
+        int tourLength = calculateTourLength(population[i], dist);
+        fitness[i] = 1.0 / tourLength; // Inverse of distance for fitness
         totalFitness += fitness[i];
     }
 
@@ -98,13 +99,42 @@ int main() {
     int parent1Index = rouletteWheelSelection(fitness, totalFitness);
     int parent2Index = rouletteWheelSelection(fitness, totalFitness);
 
-    orderCrossover(population[parent1Index], population[parent2Index], child);
+    const vector<int>& parent1 = population[parent1Index];
+    const vector<int>& parent2 = population[parent2Index];
+    orderCrossover(parent1, parent2, child);
 
     // Calculate child's tour length
     int childLength = calculateTourLength(child, dist);
-    cout << "Child tour length: " << childLength << endl;
+
+    // Output results
+    cout << "\nPopulation:\n";
+    for (const auto& tour : population) {
+        for (int city : tour) {
+            cout << city << " ";
+        }
+        cout << endl;
+    }
+
+    cout << "\nFitness:\n";
+    for (double f : fitness) {
+        cout << f << " ";
+    }
+    cout << endl;
+
+    cout << "\nSelected Parents:\n";
+    for (int city : parent1) cout << city << " ";
+    cout << endl;
+    for (int city : parent2) cout << city << " ";
+    cout << endl;
+
+    cout << "\nChild Tour:\n";
+    for (int city : child) cout << city << " ";
+    cout << endl;
+
+    cout << "Child Tour Length: " << childLength << endl;
 
     return 0;
 }
+
 TC:o(n) no of crossover opreartion xo(m) size of pop
 SC:o(n) sotre chromosome xo(m) fitness level
