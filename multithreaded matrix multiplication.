@@ -1,0 +1,83 @@
+#include <iostream>
+#include <vector>
+#include <thread>
+#include <chrono>
+
+using namespace std;
+
+// Function to multiply a part of the matrix (i.e., a row) in parallel
+void multiplyRow(int row, int n, int p, const vector<vector<int>>& A, const vector<vector<int>>& B, vector<vector<int>>& C) {
+    for (int j = 0; j < p; j++) {
+        C[row][j] = 0;
+        for (int k = 0; k < n; k++) {
+            C[row][j] += A[row][k] * B[k][j];
+        }
+    }
+}
+
+int main() {
+    int m, n, p;
+
+    // Taking user input for matrix dimensions
+    cout << "Enter number of rows of matrix A: ";
+    cin >> m;
+    cout << "Enter number of columns of matrix A (also number of rows of matrix B): ";
+    cin >> n;
+    cout << "Enter number of columns of matrix B: ";
+    cin >> p;
+
+    // Initialize matrices A, B, and C
+    vector<vector<int>> A(m, vector<int>(n)), B(n, vector<int>(p)), C(m, vector<int>(p));
+
+    // Input matrix A
+    cout << "Enter elements of matrix A (" << m << " x " << n << "):\n";
+    for (int i = 0; i < m; i++) {
+        for (int j = 0; j < n; j++) {
+            cin >> A[i][j];
+        }
+    }
+
+    // Input matrix B
+    cout << "Enter elements of matrix B (" << n << " x " << p << "):\n";
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < p; j++) {
+            cin >> B[i][j];
+        }
+    }
+
+    // Create a vector to hold the threads
+    vector<thread> threads;
+
+    // Start time for performance measurement
+    auto start = chrono::high_resolution_clock::now();
+
+    // Launch a thread for each row of matrix A
+    for (int i = 0; i < m; i++) {
+        threads.push_back(thread(multiplyRow, i, n, p, cref(A), cref(B), ref(C)));
+    }
+
+    // Join all threads
+    for (auto& t : threads) {
+        t.join();
+    }
+
+    // End time for performance measurement
+    auto end = chrono::high_resolution_clock::now();
+    chrono::duration<double> duration = end - start;
+
+    // Output the result matrix C
+    cout << "Resultant Matrix C (" << m << " x " << p << "):\n";
+    for (int i = 0; i < m; i++) {
+        for (int j = 0; j < p; j++) {
+            cout << C[i][j] << " ";
+        }
+        cout << endl;
+    }
+
+    // Output time taken for multiplication
+    cout << "Time taken for matrix multiplication: " << duration.count() << " seconds." << endl;
+
+    return 0;
+}
+TC:mxnxp
+SC:a+b+c(a=mxn,b=nxp,c=mxp)
