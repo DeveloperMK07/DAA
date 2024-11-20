@@ -1,0 +1,71 @@
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+
+public class DiningPhilosophers {
+
+    // Number of philosophers
+    private static final int NUM_PHILOSOPHERS = 5;
+    private static final Philosopher[] philosophers = new Philosopher[NUM_PHILOSOPHERS];
+    private static final Lock[] forks = new ReentrantLock[NUM_PHILOSOPHERS];
+
+    public static void main(String[] args) {
+        // Initialize forks as locks
+        for (int i = 0; i < NUM_PHILOSOPHERS; i++) {
+            forks[i] = new ReentrantLock();
+        }
+
+        // Initialize philosophers
+        for (int i = 0; i < NUM_PHILOSOPHERS; i++) {
+            philosophers[i] = new Philosopher(i, forks[i], forks[(i + 1) % NUM_PHILOSOPHERS]);
+            new Thread(philosophers[i]).start();
+        }
+    }
+
+    // Philosopher class implementing Runnable
+    static class Philosopher implements Runnable {
+        private final int id;         // Philosopher ID
+        private final Lock leftFork;  // Left fork lock
+        private final Lock rightFork; // Right fork lock
+
+        public Philosopher(int id, Lock leftFork, Lock rightFork) {
+            this.id = id;
+            this.leftFork = leftFork;
+            this.rightFork = rightFork;
+        }
+
+        @Override
+        public void run() {
+            while (true) {
+                try {
+                    think();
+                    if (id % 2 == 0) {
+                        // Pick up forks in a specific order to prevent deadlocks
+                        leftFork.lock();
+                        rightFork.lock();
+                    } else {
+                        rightFork.lock();
+                        leftFork.lock();
+                    }
+
+                    eat();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                } finally {
+                    // Release forks
+                    leftFork.unlock();
+                    rightFork.unlock();
+                }
+            }
+        }
+
+        private void think() throws InterruptedException {
+            System.out.println("Philosopher " + id + " is thinking.");
+            Thread.sleep((long) (Math.random() * 1000)); // Simulate thinking time
+        }
+
+        private void eat() throws InterruptedException {
+            System.out.println("Philosopher " + id + " is eating.");
+            Thread.sleep((long) (Math.random() * 1000)); // Simulate eating time
+        }
+    }
+}
